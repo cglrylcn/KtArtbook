@@ -16,8 +16,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.caglar.ktartbook.databinding.ActivityArtBinding
-import com.caglar.ktartbook.databinding.ActivityMainBinding
 import com.google.android.material.snackbar.Snackbar
+import java.io.ByteArrayOutputStream
 import java.lang.Exception
 
 class ArtActivity : AppCompatActivity() {
@@ -40,6 +40,29 @@ class ArtActivity : AppCompatActivity() {
         val year = binding.yearText.text.toString()
         if (selectedBitmap != null) {
             val smallBitmap = makeSmallerBitmap(selectedBitmap!!,300)
+            val outputStream = ByteArrayOutputStream()
+            smallBitmap.compress(Bitmap.CompressFormat.PNG,50,outputStream)
+            val byteArray = outputStream.toByteArray()
+
+            try {
+                val database = this.openOrCreateDatabase("Arts", MODE_PRIVATE, null)
+                database.execSQL("CREATE TABLE IF NOT EXISTS arts(id INTEGER PRIMARY KEY, artName VARCHAR, artistName VARCHAR, year VARCHAR, image BLOB)")
+                val sqlString = "INSERT INTO arts (artName, artistName, year, image) VALUES (?,?,?,?)"
+                val statement = database.compileStatement(sqlString)
+                statement.bindString(1, artName)
+                statement.bindString(2, artistName)
+                statement.bindString(3, year)
+                statement.bindBlob(4, byteArray)
+                statement.execute()
+            }
+            catch (e: Exception) {
+                e.printStackTrace()
+            }
+            val intent = Intent(this@ArtActivity, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(intent)
+
+
         }
     }
 
